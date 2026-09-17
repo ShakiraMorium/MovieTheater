@@ -7,224 +7,181 @@ import MovieGrid from './components/MovieGrid';
 import MovieDetailsModal from './components/MovieDetailsModal';
 import Footer from './components/Footer';
 import Toast from './components/Toast';
-import { fetchAllShows, searchShows } from './services/tvmazeApi';
-import { Sparkles, Bookmark, Compass } from 'lucide-react';
+import { getShows, searchShows } from './services/tvmazeApi';
+import { Sparkles, Compass } from 'lucide-react';
 
-const LOCAL_STORAGE_KEY = 'movie_explorer_watchlist_v1';
+const STORAGE_KEY = 'movie_explorer_watchlist';
 
 export default function App() {
-  // Navigation View State ('home' | 'movies' | 'watchlist')
-  const [activeView, setActiveView] = useState('home');
-
-  // Search & Filter State
-  const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [currentView, setCurrentView] = useState('home');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('All');
-  const [sortBy, setSortBy] = useState('featured');
+  const [sortOption, setSortOption] = useState('featured');
 
-  // Data States
-  const [initialShows, setInitialShows] = useState([]);
+  const [shows, setShows] = useState([]);
   const [searchResults, setSearchResults] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [apiError, setApiError] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Watchlist / Favorites (persisted in localStorage)
   const [watchlist, setWatchlist] = useState(() => {
     try {
-      const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+      const saved = localStorage.getItem(STORAGE_KEY);
       return saved ? JSON.parse(saved) : [];
     } catch (e) {
-      console.warn('Failed to load watchlist from localStorage', e);
       return [];
     }
   });
 
-  // Modal State
-  const [selectedMovie, setSelectedMovie] = useState(null);
+  const [activeMovie, setActiveMovie] = useState(null);
+  const [toastText, setToastText] = useState(null);
 
-  // Toast Notification State
-  const [toastMessage, setToastMessage] = useState(null);
-
-  // Sync Watchlist to localStorage
+  // Keep watchlist synchronized with localStorage
   useEffect(() => {
     try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(watchlist));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(watchlist));
     } catch (e) {
-      console.warn('Failed to save watchlist to localStorage', e);
+      console.warn('Could not save to storage', e);
     }
   }, [watchlist]);
 
-  // Initial Data Fetch
+  // Load initial shows on mount
   useEffect(() => {
-    let isMounted = true;
-    async function loadData() {
-      setIsLoading(true);
-      setApiError(null);
+    let isCurrent = true;
+    async function init() {
+      setLoading(true);
       try {
-        const data = await fetchAllShows(0);
-        if (isMounted) {
-          setInitialShows(data);
-        }
+        const data = await getShows(0);
+        if (isCurrent) setShows(data);
       } catch (err) {
-        if (isMounted) {
-          setApiError('Unable to load shows from TVMaze. Please check your connection.');
-        }
+        console.error('Failed to load initial shows', err);
       } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        if (isCurrent) setLoading(false);
       }
     }
-    loadData();
+    init();
     return () => {
-      isMounted = false;
+      isCurrent = false;
     };
   }, []);
 
-  // Debounce search query
+  // Debounce search input
   useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedQuery(searchQuery);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
     }, 350);
-    return () => clearTimeout(handler);
-  }, [searchQuery]);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
-  // Execute search when debounced query changes
+  // Fetch search results when debounced query updates
   useEffect(() => {
-    let isMounted = true;
-    if (!debouncedQuery.trim()) {
+    let isCurrent = true;
+    if (!debouncedSearch.trim()) {
       setSearchResults([]);
       return;
     }
 
-    async function executeSearch() {
-      setIsLoading(true);
+    async function doSearch() {
+      setLoading(true);
       try {
-        const results = await searchShows(debouncedQuery);
-        if (isMounted) {
-          setSearchResults(results);
-        }
+        const res = await searchShows(debouncedSearch);
+        if (isCurrent) setSearchResults(res);
       } catch (err) {
-        console.error('Search error:', err);
+        console.error('Search error', err);
       } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        if (isCurrent) setLoading(false);
       }
     }
 
-    executeSearch();
+    doSearch();
     return () => {
-      isMounted = false;
+      isCurrent = false;
     };
-  }, [debouncedQuery]);
+  }, [debouncedSearch]);
 
-  // Handle Watchlist Toggle
-  const toggleWatchlist = (movie) => {
+  const handleToggleWatchlist = (movie) => {
     if (!movie) return;
     const exists = watchlist.some((item) => item.id === movie.id);
     if (exists) {
       setWatchlist((prev) => prev.filter((item) => item.id !== movie.id));
-      setToastMessage(`Removed "${movie.name}" from your Watchlist`);
+      setToastText(`Removed "${movie.name}" from your Watchlist`);
     } else {
       setWatchlist((prev) => [movie, ...prev]);
-      setToastMessage(`Added "${movie.name}" to your Watchlist`);
+      setToastText(`Added "${movie.name}" to your Watchlist`);
     }
   };
 
-  // Switch navigation and optionally set genre
-  const navigateTo = (view, genre = null) => {
-    setActiveView(view);
-    if (genre) {
-      setSelectedGenre(genre);
-    }
+  const handleNavigate = (view, genre = null) => {
+    setCurrentView(view);
+    if (genre) setSelectedGenre(genre);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Reset all filters and search query
   const handleResetFilters = () => {
-    setSearchQuery('');
-    setDebouncedQuery('');
+    setSearchTerm('');
+    setDebouncedSearch('');
     setSelectedGenre('All');
-    setSortBy('featured');
+    setSortOption('featured');
   };
 
-  // Determine movies list to display based on activeView & search
-  const currentBaseList = useMemo(() => {
-    if (activeView === 'watchlist') {
-      return watchlist;
+  const displayedList = useMemo(() => {
+    let source = shows;
+    if (currentView === 'watchlist') {
+      source = watchlist;
+    } else if (debouncedSearch.trim()) {
+      source = searchResults;
     }
-    if (debouncedQuery.trim()) {
-      return searchResults;
-    }
-    return initialShows;
-  }, [activeView, debouncedQuery, searchResults, initialShows, watchlist]);
 
-  // Apply genre filtering and sorting
-  const filteredAndSortedMovies = useMemo(() => {
-    let list = [...currentBaseList];
+    let result = [...source];
 
-    // Filter by genre
     if (selectedGenre !== 'All') {
-      list = list.filter(
+      result = result.filter(
         (m) => m.genres && m.genres.some((g) => g.toLowerCase() === selectedGenre.toLowerCase())
       );
     }
 
-    // Sort
-    if (sortBy === 'rating-desc') {
-      list.sort((a, b) => {
+    if (sortOption === 'rating-desc') {
+      result.sort((a, b) => {
         const rA = a.rating ? parseFloat(a.rating) : -1;
         const rB = b.rating ? parseFloat(b.rating) : -1;
         return rB - rA;
       });
-    } else if (sortBy === 'date-desc') {
-      list.sort((a, b) => {
-        const dA = a.premiered || '';
-        const dB = b.premiered || '';
-        return dB.localeCompare(dA);
-      });
-    } else if (sortBy === 'name-asc') {
-      list.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortOption === 'date-desc') {
+      result.sort((a, b) => (b.premiered || '').localeCompare(a.premiered || ''));
+    } else if (sortOption === 'name-asc') {
+      result.sort((a, b) => a.name.localeCompare(b.name));
     }
 
-    return list;
-  }, [currentBaseList, selectedGenre, sortBy]);
+    return result;
+  }, [currentView, debouncedSearch, searchResults, shows, watchlist, selectedGenre, sortOption]);
 
   return (
     <div className="app-container">
-      {/* Top Sticky Navbar */}
       <Navbar
-        activeView={activeView}
-        setActiveView={setActiveView}
+        activeView={currentView}
+        setActiveView={setCurrentView}
         watchlistCount={watchlist.length}
       />
 
       <main className="main-content">
-        {/* =========================================================
-            VIEW 1: HOME PAGE
-            ========================================================= */}
-        {activeView === 'home' && (
+        {/* Home Page */}
+        {currentView === 'home' && (
           <div id="home-view-container">
-            {/* Hero Banner */}
             <HeroBanner
-              onExploreClick={() => navigateTo('movies')}
+              onExploreClick={() => handleNavigate('movies')}
               onTrendingClick={() => {
                 const el = document.getElementById('trending-section');
                 if (el) el.scrollIntoView({ behavior: 'smooth' });
               }}
             />
 
-            {/* Trending / High-Rated Spotlight */}
             <TrendingPreview
-              movies={initialShows}
-              onSelectMovie={(movie) => setSelectedMovie(movie)}
+              movies={shows}
+              onSelectMovie={(m) => setActiveMovie(m)}
               favorites={watchlist}
-              onToggleFavorite={toggleWatchlist}
-              onViewAllClick={() => navigateTo('movies')}
+              onToggleFavorite={handleToggleWatchlist}
+              onViewAllClick={() => handleNavigate('movies')}
             />
 
-            {/* Quick Discover CTA Banner */}
             <section className="container" style={{ paddingBottom: '4rem' }}>
               <div
                 style={{
@@ -244,11 +201,11 @@ export default function App() {
                   Ready to explore thousands of shows?
                 </h3>
                 <p style={{ color: 'var(--text-secondary)', maxWidth: '550px' }}>
-                  Browse our complete interactive library with lightning fast live search, genre filters, and cast information.
+                  Browse our interactive library with live search, genre filters, and cast information.
                 </p>
                 <button
                   className="hero-btn-primary"
-                  onClick={() => navigateTo('movies')}
+                  onClick={() => handleNavigate('movies')}
                 >
                   <Compass size={18} />
                   <span>Launch Movie Explorer</span>
@@ -258,41 +215,36 @@ export default function App() {
           </div>
         )}
 
-        {/* =========================================================
-            VIEW 2: MOVIE LISTING & SEARCH PAGE
-            ========================================================= */}
-        {activeView === 'movies' && (
+        {/* Movies Listing Page */}
+        {currentView === 'movies' && (
           <div className="container listing-header-area" id="movie-listing-view">
-            {/* Page Title & Subtitle */}
             <div style={{ marginBottom: '1.5rem' }}>
               <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: '2.4rem', fontWeight: 900 }}>
                 Explore <span style={{ color: 'var(--accent-gold)' }}>Movies &amp; Series</span>
               </h1>
               <p style={{ color: 'var(--text-secondary)' }}>
-                Search through thousands of television shows, filter by genre, and discover your next obsession.
+                Search through television shows, filter by genre, and discover your next obsession.
               </p>
             </div>
 
-            {/* Search, Filter & Sort Controls */}
             <MovieSearch
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
+              searchQuery={searchTerm}
+              onSearchChange={setSearchTerm}
               selectedGenre={selectedGenre}
               onGenreSelect={setSelectedGenre}
-              sortBy={sortBy}
-              onSortChange={setSortBy}
-              totalResults={filteredAndSortedMovies.length}
-              isLoading={isLoading}
+              sortBy={sortOption}
+              onSortChange={setSortOption}
+              totalResults={displayedList.length}
+              isLoading={loading}
             />
 
-            {/* Live Results Info Line */}
             <div className="results-info-bar">
               <div>
-                Showing <span className="results-count-bold">{filteredAndSortedMovies.length}</span> titles
+                Showing <span className="results-count-bold">{displayedList.length}</span> titles
                 {selectedGenre !== 'All' && <span> in <strong>{selectedGenre}</strong></span>}
-                {debouncedQuery && <span> matching <strong>"{debouncedQuery}"</strong></span>}
+                {debouncedSearch && <span> matching <strong>"{debouncedSearch}"</strong></span>}
               </div>
-              {(selectedGenre !== 'All' || debouncedQuery || sortBy !== 'featured') && (
+              {(selectedGenre !== 'All' || debouncedSearch || sortOption !== 'featured') && (
                 <button
                   onClick={handleResetFilters}
                   style={{ color: 'var(--accent-gold)', fontSize: '0.85rem', textDecoration: 'underline' }}
@@ -302,29 +254,26 @@ export default function App() {
               )}
             </div>
 
-            {/* Movie Cards Grid */}
             <MovieGrid
-              movies={filteredAndSortedMovies}
-              isLoading={isLoading}
-              onSelectMovie={(movie) => setSelectedMovie(movie)}
+              movies={displayedList}
+              isLoading={loading}
+              onSelectMovie={(m) => setActiveMovie(m)}
               favorites={watchlist}
-              onToggleFavorite={toggleWatchlist}
+              onToggleFavorite={handleToggleWatchlist}
               onResetFilters={handleResetFilters}
             />
           </div>
         )}
 
-        {/* =========================================================
-            VIEW 3: WATCHLIST PAGE
-            ========================================================= */}
-        {activeView === 'watchlist' && (
+        {/* Watchlist Page */}
+        {currentView === 'watchlist' && (
           <div className="container listing-header-area" id="watchlist-view">
             <div style={{ marginBottom: '1.5rem' }}>
               <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: '2.4rem', fontWeight: 900 }}>
                 My <span style={{ color: 'var(--accent-red)' }}>Watchlist</span>
               </h1>
               <p style={{ color: 'var(--text-secondary)' }}>
-                Titles you've saved to watch later. Saved directly in your browser.
+                Titles saved to your personal list.
               </p>
             </div>
 
@@ -339,33 +288,32 @@ export default function App() {
             <MovieGrid
               movies={watchlist}
               isLoading={false}
-              onSelectMovie={(movie) => setSelectedMovie(movie)}
+              onSelectMovie={(m) => setActiveMovie(m)}
               favorites={watchlist}
-              onToggleFavorite={toggleWatchlist}
-              onResetFilters={() => navigateTo('movies')}
+              onToggleFavorite={handleToggleWatchlist}
+              onResetFilters={() => handleNavigate('movies')}
             />
           </div>
         )}
       </main>
 
-      {/* Interactive Movie Details Modal */}
-      {selectedMovie && (
+      {/* Details Modal */}
+      {activeMovie && (
         <MovieDetailsModal
-          movie={selectedMovie}
-          onClose={() => setSelectedMovie(null)}
-          isFavorite={watchlist.some((item) => item.id === selectedMovie.id)}
-          onToggleFavorite={toggleWatchlist}
+          movie={activeMovie}
+          onClose={() => setActiveMovie(null)}
+          isFavorite={watchlist.some((item) => item.id === activeMovie.id)}
+          onToggleFavorite={handleToggleWatchlist}
         />
       )}
 
-      {/* Floating Toast Notification */}
+      {/* Notification Toast */}
       <Toast
-        message={toastMessage}
-        onClose={() => setToastMessage(null)}
+        message={toastText}
+        onClose={() => setToastText(null)}
       />
 
-      {/* Footer */}
-      <Footer onNavClick={navigateTo} />
+      <Footer onNavClick={handleNavigate} />
     </div>
   );
 }

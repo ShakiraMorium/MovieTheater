@@ -4,15 +4,12 @@ import {
   Star, 
   Calendar, 
   Clock, 
-  Tv, 
-  Globe, 
-  Bookmark, 
-  Film,
   Users,
-  CheckCircle,
-  ExternalLink
+  ExternalLink,
+  Film,
+  Bookmark
 } from 'lucide-react';
-import { fetchShowDetailsWithCast } from '../services/tvmazeApi';
+import { getShowWithCast } from '../services/tvmazeApi';
 
 export default function MovieDetailsModal({
   movie,
@@ -20,20 +17,16 @@ export default function MovieDetailsModal({
   isFavorite = false,
   onToggleFavorite
 }) {
-  const [detailedMovie, setDetailedMovie] = useState(movie);
-  const [loadingDetails, setLoadingDetails] = useState(false);
+  const [details, setDetails] = useState(movie);
   const [imgError, setImgError] = useState(false);
   const [backdropError, setBackdropError] = useState(false);
 
-  // Close on Escape key
+  // Close modal when Escape key is pressed
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
+      if (e.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', handleKeyDown);
-    // Lock background scrolling
     document.body.style.overflow = 'hidden';
 
     return () => {
@@ -42,39 +35,35 @@ export default function MovieDetailsModal({
     };
   }, [onClose]);
 
-  // Fetch enriched details with cast if not available
+  // Load cast data if not already present
   useEffect(() => {
     if (!movie?.id) return;
-    let isMounted = true;
+    let active = true;
 
-    async function loadCastAndDetails() {
-      if (movie.embeddedCast && movie.embeddedCast.length > 0) {
-        setDetailedMovie(movie);
+    async function loadData() {
+      if (movie.cast && movie.cast.length > 0) {
+        setDetails(movie);
         return;
       }
-
-      setLoadingDetails(true);
       try {
-        const fullData = await fetchShowDetailsWithCast(movie.id);
-        if (isMounted && fullData) {
-          setDetailedMovie(fullData);
+        const fullData = await getShowWithCast(movie.id);
+        if (active && fullData) {
+          setDetails(fullData);
         }
       } catch (err) {
-        console.warn('Could not fetch extra cast details:', err);
-      } finally {
-        if (isMounted) setLoadingDetails(false);
+        console.log('Unable to load cast:', err);
       }
     }
 
-    loadCastAndDetails();
+    loadData();
     return () => {
-      isMounted = false;
+      active = false;
     };
   }, [movie]);
 
   if (!movie) return null;
 
-  const current = detailedMovie || movie;
+  const current = details || movie;
   const {
     id,
     name,
@@ -90,13 +79,13 @@ export default function MovieDetailsModal({
     language,
     network,
     officialSite,
-    embeddedCast = []
+    cast = []
   } = current;
 
-  // TVMaze summary is raw HTML like <p>...</p>. Clean HTML tags or render safely.
+  // Clean HTML tags from summary string
   const cleanSummary = summary
     ? summary.replace(/<[^>]*>?/gm, '')
-    : 'No synopsis available for this title.';
+    : 'No description available for this title.';
 
   const handleBackdropClick = (e) => {
     if (e.target === e.currentTarget) {
@@ -111,21 +100,19 @@ export default function MovieDetailsModal({
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
-      aria-labelledby="modal-movie-title"
     >
       <div className="modal-card" id="movie-details-modal-box">
-        {/* Top ✕ Close Icon Button */}
+        {/* Close Button */}
         <button
           id="modal-close-top-btn"
           className="modal-close-icon-btn"
           onClick={onClose}
-          aria-label="Close modal"
-          title="Close (Esc)"
+          aria-label="Close"
         >
           <X size={20} />
         </button>
 
-        {/* Backdrop Banner Area */}
+        {/* Hero Backdrop */}
         <div className="modal-backdrop-wrap">
           {backdrop && !backdropError ? (
             <img
@@ -142,10 +129,10 @@ export default function MovieDetailsModal({
           <div className="modal-backdrop-gradient" />
         </div>
 
-        {/* Scrollable Modal Content */}
+        {/* Scrollable details */}
         <div className="modal-scrollable-body">
           <div className="modal-content-grid">
-            {/* Left Column: Poster & Quick Action */}
+            {/* Poster & Bookmark Button */}
             <div className="modal-poster-col">
               <div className="modal-poster-card">
                 {image && !imgError ? (
@@ -162,7 +149,6 @@ export default function MovieDetailsModal({
                 )}
               </div>
 
-              {/* Watchlist Toggle */}
               <button
                 id="modal-watchlist-toggle-btn"
                 className={`modal-watchlist-btn ${isFavorite ? 'active' : ''}`}
@@ -173,13 +159,12 @@ export default function MovieDetailsModal({
               </button>
             </div>
 
-            {/* Right Column: Title, Metadata, Overview */}
+            {/* Title & Info */}
             <div className="modal-info-col">
               <h2 className="modal-title" id="modal-movie-title">
                 {name}
               </h2>
 
-              {/* Quick Meta Row */}
               <div className="modal-meta-bar">
                 <span className="modal-meta-item">
                   <Star size={16} fill="#facc15" className="rating-star-icon" />
@@ -192,7 +177,7 @@ export default function MovieDetailsModal({
 
                 <span className="modal-meta-item">
                   <Calendar size={16} />
-                  <span>{premiered || year || 'Unknown Release'}</span>
+                  <span>{premiered || year || 'Unknown'}</span>
                 </span>
 
                 {runtime && (
@@ -213,8 +198,7 @@ export default function MovieDetailsModal({
                 )}
               </div>
 
-              {/* Genre Tags */}
-              {genres && genres.length > 0 && (
+              {genres.length > 0 && (
                 <div className="modal-genres">
                   {genres.map((g) => (
                     <span key={g} className="modal-genre-tag">
@@ -224,21 +208,19 @@ export default function MovieDetailsModal({
                 </div>
               )}
 
-              {/* Overview / Synopsis */}
               <h4 className="modal-section-title">Overview</h4>
               <p className="modal-overview-text" id="modal-overview-content">
                 {cleanSummary}
               </p>
 
-              {/* Additional Meta Table */}
               <div className="modal-details-table">
                 <div>
-                  <div className="meta-field-label">Original Network / Channel</div>
+                  <div className="meta-field-label">Network / Channel</div>
                   <div className="meta-field-val">{network || 'N/A'}</div>
                 </div>
 
                 <div>
-                  <div className="meta-field-label">Original Language</div>
+                  <div className="meta-field-label">Language</div>
                   <div className="meta-field-val">{language || 'English'}</div>
                 </div>
 
@@ -253,15 +235,14 @@ export default function MovieDetailsModal({
                 </div>
               </div>
 
-              {/* Embedded Cast Members (if available) */}
-              {embeddedCast && embeddedCast.length > 0 && (
+              {cast.length > 0 && (
                 <div>
                   <h4 className="modal-section-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <Users size={18} />
                     <span>Featured Cast</span>
                   </h4>
                   <div className="cast-grid">
-                    {embeddedCast.slice(0, 6).map((item, idx) => {
+                    {cast.slice(0, 6).map((item, idx) => {
                       const person = item.person;
                       const character = item.character;
                       const avatarUrl = person?.image?.medium || character?.image?.medium;
@@ -290,7 +271,7 @@ export default function MovieDetailsModal({
           </div>
         </div>
 
-        {/* Modal Bottom Action Bar */}
+        {/* Modal Bottom Actions */}
         <div className="modal-footer-bar">
           {officialSite && (
             <a

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Bookmark, CheckCircle2, X } from 'lucide-react';
+import { CheckCircle2, X } from 'lucide-react';
 
 export default function Toast({ message, onClose, duration = 3000 }) {
   useEffect(() => {

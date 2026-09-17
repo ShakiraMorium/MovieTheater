@@ -1,7 +1,3 @@
-/* ==========================================================================
-   MOVIE EXPLORER - MODERN CINEMATIC DESIGN SYSTEM
-   ========================================================================== */
-
 :root {
   --bg-primary: #0a0d14;
   --bg-secondary: #101522;
@@ -43,7 +39,6 @@
   --transition-slow: 400ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Reset & Base Setup */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -69,7 +64,7 @@ body {
   background-attachment: fixed;
 }
 
-/* Scrollbar Customization */
+/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -97,9 +92,7 @@ button {
   background: none;
 }
 
-/* ==========================================================================
-   LAYOUT CONTAINERS
-   ========================================================================== */
+/* Base Layout */
 .app-container {
   display: flex;
   flex-direction: column;
@@ -117,9 +110,7 @@ button {
   padding: 0 1.5rem;
 }
 
-/* ==========================================================================
-   NAVBAR
-   ========================================================================== */
+/* Navbar */
 .navbar-header {
   position: sticky;
   top: 0;
@@ -165,7 +156,6 @@ button {
 .brand-title span {
   background: linear-gradient(135deg, #f59e0b, #facc15);
   -webkit-background-clip: text;
-  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -258,9 +248,7 @@ button {
   animation: slideDown 200ms ease;
 }
 
-/* ==========================================================================
-   HERO BANNER
-   ========================================================================== */
+/* Hero Section */
 .hero-section {
   position: relative;
   min-height: 520px;
@@ -350,7 +338,6 @@ button {
 .hero-title-gradient {
   background: linear-gradient(135deg, #ffffff 30%, #facc15 80%, #f59e0b 100%);
   -webkit-background-clip: text;
-  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -443,9 +430,7 @@ button {
   letter-spacing: 0.05em;
 }
 
-/* ==========================================================================
-   TRENDING SPOTLIGHT SECTION (Home Page)
-   ========================================================================== */
+/* Section Header (Trending / Highlights) */
 .section-header {
   display: flex;
   align-items: flex-end;
@@ -491,9 +476,7 @@ button {
   gap: 0.65rem;
 }
 
-/* ==========================================================================
-   MOVIE LISTING PAGE (SEARCH & FILTERS)
-   ========================================================================== */
+/* Search Bar & Filtering Area */
 .listing-header-area {
   padding: 2.5rem 0 1.5rem;
 }
@@ -565,7 +548,6 @@ button {
   background: rgba(255, 255, 255, 0.2);
 }
 
-/* Filters & Sorting Bar */
 .filter-controls-row {
   display: flex;
   align-items: center;
@@ -645,7 +627,6 @@ button {
   color: var(--text-primary);
 }
 
-/* Results Status Line */
 .results-info-bar {
   display: flex;
   align-items: center;
@@ -660,9 +641,7 @@ button {
   font-weight: 700;
 }
 
-/* ==========================================================================
-   MOVIE GRID & REUSABLE CARDS
-   ========================================================================== */
+/* Movie Cards Grid */
 .movie-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -721,7 +700,6 @@ button {
   font-size: 0.85rem;
 }
 
-/* Floating Badges on Poster */
 .card-rating-badge {
   position: absolute;
   top: 0.85rem;
@@ -774,7 +752,6 @@ button {
   border-color: var(--accent-red);
 }
 
-/* Card Content Details */
 .card-content {
   display: flex;
   flex-direction: column;
@@ -853,9 +830,7 @@ button {
   box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
 }
 
-/* ==========================================================================
-   MOVIE DETAILS MODAL
-   ========================================================================== */
+/* Movie Details Modal */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -910,7 +885,6 @@ button {
   transform: rotate(90deg);
 }
 
-/* Modal Hero Backdrop */
 .modal-backdrop-wrap {
   position: relative;
   width: 100%;
@@ -937,7 +911,6 @@ button {
   padding: 0 2rem 2rem;
 }
 
-/* Modal Content Grid */
 .modal-content-grid {
   display: grid;
   grid-template-columns: 200px 1fr;
@@ -997,7 +970,6 @@ button {
   color: var(--accent-red);
 }
 
-/* Details Column */
 .modal-info-col {
   display: flex;
   flex-direction: column;
@@ -1101,7 +1073,6 @@ button {
   color: #f1f5f9;
 }
 
-/* Cast Section */
 .cast-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
@@ -1154,7 +1125,6 @@ button {
   color: var(--text-muted);
 }
 
-/* Modal Bottom Action Footer */
 .modal-footer-bar {
   display: flex;
   align-items: center;
@@ -1201,9 +1171,7 @@ button {
   box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
 }
 
-/* ==========================================================================
-   EMPTY STATE & SKELETON LOADERS
-   ========================================================================== */
+/* States & Loaders */
 .empty-state-box {
   display: flex;
   flex-direction: column;
@@ -1243,7 +1211,6 @@ button {
   margin-bottom: 1.5rem;
 }
 
-/* Skeleton Loading Shimmer */
 .skeleton-card {
   height: 380px;
   border-radius: var(--radius-lg);
@@ -1278,9 +1245,7 @@ button {
   50% { opacity: 0.4; }
 }
 
-/* ==========================================================================
-   TOAST NOTIFICATION
-   ========================================================================== */
+/* Toast */
 .toast-container {
   position: fixed;
   bottom: 2rem;
@@ -1314,9 +1279,7 @@ button {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* ==========================================================================
-   FOOTER
-   ========================================================================== */
+/* Footer */
 .footer-wrap {
   background: #080b11;
   border-top: 1px solid var(--border-subtle);
@@ -1400,9 +1363,7 @@ button {
   text-decoration: underline;
 }
 
-/* ==========================================================================
-   RESPONSIVE MEDIA QUERIES
-   ========================================================================== */
+/* Responsive adjustments */
 @media (max-width: 900px) {
   .modal-content-grid {
     grid-template-columns: 1fr;

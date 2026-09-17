@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, ArrowRight, Play, Film, Star, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Play } from 'lucide-react';
 
 export default function HeroBanner({ onExploreClick, onTrendingClick }) {
   return (

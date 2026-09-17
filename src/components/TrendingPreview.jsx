@@ -1,6 +1,6 @@
 import React from 'react';
 import MovieCard from './MovieCard';
-import { Sparkles, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 export default function TrendingPreview({
   movies = [],
